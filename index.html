@@ -21,42 +21,48 @@
   </table>
 
   <script>
-    var repoURL = "https://api.github.com/repos/MBot-Project-Development/mbot_ip_registry/contents/data";
-    fetch(repoURL)
-    .then(response => {
-        if (!response.ok) {
+   var repoURL = "https://api.github.com/repos/MBot-Project-Development/mbot_ip_registry/contents/data";
+   fetch(repoURL)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(files => {
+    console.log(`Fetched ${files.length} files from repo`);
+    var promises = files.map(file => fetch(file.download_url)
+    .then(res => {
+      if (!res.ok) {
         throw new Error('Network response was not ok');
-        }
-        return response.json();
+      }
+      return res.json();
     })
-    .then(files => {
-        var promises = files.map(file => fetch(file.download_url)
-        .then(res => {
-        if (!res.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return res.json();
-        })
-        .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
-        return Promise.all(promises);
-    })
-    .then(data => {
-        data.forEach(d => d.last_update = new Date(d.last_update));
-        data.sort((a, b) => b.last_update - a.last_update);
+    .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
+    return Promise.all(promises);
+  })
+  .then(data => {
+    console.log(`Fetched data from all files: `, data);
 
-        var cutoff = new Date();
-        cutoff.setMonth(cutoff.getMonth() - 1);
-        data = data.filter(d => d.last_update > cutoff);
+    data.forEach(d => d.last_update = new Date(d.last_update));
+    data.sort((a, b) => b.last_update - a.last_update);
+    console.log(`Sorted data: `, data);
 
-        var tbody = document.getElementById('robotTable').tBodies[0];
-        data.forEach(d => {
-        var row = tbody.insertRow();
-        row.insertCell().textContent = d.hostname;
-        row.insertCell().textContent = d.ip;
-        row.insertCell().textContent = d.last_update.toLocaleString();
-        });
-    })
-    .catch(error => console.error('There has been a problem with your fetch operation: ', error));
+    var cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 1);
+    data = data.filter(d => d.last_update > cutoff);
+    console.log(`Filtered data: `, data);
+
+    var tbody = document.getElementById('robotTable').tBodies[0];
+    data.forEach(d => {
+      var row = tbody.insertRow();
+      row.insertCell().textContent = d.hostname;
+      row.insertCell().textContent = d.ip;
+      row.insertCell().textContent = d.last_update.toLocaleString();
+    });
+  })
+  .catch(error => console.error('There has been a problem with your fetch operation: ', error));
+
   </script>
 </body>
 </html>
