@@ -65,30 +65,32 @@
       return new Date(year, month, day, hour, minute, second);
     }
 
-    fetch(repoURL)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(files => {
-        var promises = files.map(file => fetch(file.download_url)
-          .then(res => {
-            if (!res.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return res.json();
-          })
-          .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
-        return Promise.all(promises);
-      })
-      .then(resData => {
-        data = resData;
-        data.forEach(d => d.last_update = parseDateString(d.last_update));
-        renderTable('last_update');
-      })
-      .catch(error => console.error('There has been a problem with your fetch operation: ', error));
+    function fetchAndRenderData() {
+      fetch(repoURL)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(files => {
+          var promises = files.map(file => fetch(file.download_url)
+            .then(res => {
+              if (!res.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return res.json();
+            })
+            .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
+          return Promise.all(promises);
+        })
+        .then(resData => {
+          data = resData;
+          data.forEach(d => d.last_update = parseDateString(d.last_update));
+          renderTable('last_update');
+        })
+        .catch(error => console.error('There has been a problem with your fetch operation: ', error));
+    }
 
     function renderTable(sortField) {
       data.sort((a, b) => {
@@ -117,6 +119,13 @@
     function sortTable(field) {
       renderTable(field);
     }
+
+    // Fetch data immediately upon page load
+    fetchAndRenderData();
+
+    // Set up a timer to fetch data every 30 seconds
+    setInterval(fetchAndRenderData, 60000);
+
   </script>
 </body>
 </html>
