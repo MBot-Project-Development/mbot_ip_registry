@@ -1,25 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Simple JavaScript Test</title>
+  <title>Robots Status</title>
+  <style>
+    table {border-collapse: collapse;}
+    th, td {border: 1px solid black; padding: 5px;}
+  </style>
 </head>
 <body>
-  <div id="testMessage">
-    <!-- JavaScript will insert a message here -->
-  </div>
+  <table id="robotTable">
+    <thead>
+      <tr>
+        <th>Hostname</th>
+        <th>IP</th>
+        <th>Last Update</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- JavaScript will insert rows here -->
+    </tbody>
+  </table>
 
   <script>
-    var jsonFileURL = "https://raw.githubusercontent.com/MBot-Project-Development/mbot_ip_registry/main/data/mbot-0000.json";
+    var repoURL = "https://api.github.com/repos/MBot-Project-Development/mbot_ip_registry/contents/data";
 
-    fetch(jsonFileURL)
+    fetch(repoURL)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
         return response.json();
       })
+      .then(files => {
+        var promises = files.map(file => fetch(file.download_url)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return res.json();
+          })
+          .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
+        return Promise.all(promises);
+      })
       .then(data => {
-        document.getElementById('testMessage').textContent = 'Hostname: ' + data.hostname + ', IP: ' + data.ip;
+        data.forEach(d => d.last_update = new Date(d.last_update));
+        data.sort((a, b) => b.last_update - a.last_update);
+
+        var cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 1);
+        data = data.filter(d => d.last_update > cutoff);
+
+        var tbody = document.getElementById('robotTable').tBodies[0];
+        data.forEach(d => {
+          var row = tbody.insertRow();
+          row.insertCell().textContent = d.hostname;
+          row.insertCell().textContent = d.ip;
+          row.insertCell().textContent = d.last_update.toLocaleString();
+        });
       })
       .catch(error => console.error('There has been a problem with your fetch operation: ', error));
   </script>
