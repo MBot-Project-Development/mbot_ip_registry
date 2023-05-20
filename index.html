@@ -9,7 +9,19 @@
   </div>
 
   <script>
-    document.getElementById('testMessage').textContent = 'Hello, this message was inserted by JavaScript!';
+    var jsonFileURL = "https://raw.githubusercontent.com/MBot-Project-Development/mbot_ip_registry/main/data/filename.json";
+
+    fetch(jsonFileURL)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById('testMessage').textContent = 'Hostname: ' + data.hostname + ', IP: ' + data.ip;
+      })
+      .catch(error => console.error('There has been a problem with your fetch operation: ', error));
   </script>
 </body>
 </html>
