@@ -3,17 +3,45 @@
 <head>
   <title>Robots Status</title>
   <style>
-    table {border-collapse: collapse;}
-    th, td {border: 1px solid black; padding: 5px;}
+    body {
+      background-color: #222222; /* 80% gray */
+      color: #FFFFFF; /* White text */
+      font-family: monospace; /* Monospaced font for the entire body */
+    }
+    h1 {
+      color: #EEEEEE; /* White text */
+      text-align: center;
+      padding: 20px 0;
+      font-family: "Helvetica", sans-serif; /* Helvetica font for the title */
+    }
+    table {
+      border-collapse: collapse;
+      background-color: #444444; /* 60% gray */
+      width: 100%;
+      margin: 20px auto;
+    }
+    th, td {
+      border: 1px solid #FFFFFF;
+      padding: 5px;
+      text-align: center;
+    }
+    a {
+      color: #6175b0; /* White text for links */
+    }
+    .sortBtn {
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <h1>MBot Directory</h1>
   <table id="robotTable">
     <thead>
       <tr>
-        <th>Hostname</th>
+        <th><span class="sortBtn" onclick="sortTable('hostname')">Hostname</span></th>
         <th>IP</th>
-        <th>Last Update</th>
+        <th><span class="sortBtn" onclick="sortTable('last_update')">Last Update</span></th>
+        <th>Link</th>
       </tr>
     </thead>
     <tbody>
@@ -23,6 +51,7 @@
 
   <script>
     var repoURL = "https://api.github.com/repos/MBot-Project-Development/mbot_ip_registry/contents/data";
+    var data;
 
     function parseDateString(dateString) {
       // Format: 23_Feb_2023_03:31:46 PM
@@ -54,19 +83,40 @@
           .catch(error => console.error(`There has been a problem with your fetch operation for file ${file.name}: `, error)));
         return Promise.all(promises);
       })
-      .then(data => {
+      .then(resData => {
+        data = resData;
         data.forEach(d => d.last_update = parseDateString(d.last_update));
-        data.sort((a, b) => b.last_update - a.last_update);
-
-        var tbody = document.getElementById('robotTable').tBodies[0];
-        data.forEach(d => {
-          var row = tbody.insertRow();
-          row.insertCell().textContent = d.hostname;
-          row.insertCell().textContent = d.ip;
-          row.insertCell().textContent = d.last_update.toLocaleString();
-        });
+        renderTable('last_update');
       })
       .catch(error => console.error('There has been a problem with your fetch operation: ', error));
+
+    function renderTable(sortField) {
+      data.sort((a, b) => {
+        if (a[sortField] < b[sortField]) return -1;
+        if (a[sortField] > b[sortField]) return 1;
+        return 0;
+      });
+
+      var tbody = document.getElementById('robotTable').tBodies[0];
+      tbody.innerHTML = ''; // Clear existing rows
+      data.forEach(d => {
+        var row = tbody.insertRow();
+        row.insertCell().textContent = d.hostname;
+        row.insertCell().textContent = d.ip;
+        var cell = row.insertCell();
+        cell.textContent = d.last_update.toLocaleString();
+        var linkCell = row.insertCell();
+        var link = document.createElement('a');
+        link.href = "http://" + d.ip + ":8000";
+        link.textContent = "Link";
+        link.target = "_blank";
+        linkCell.appendChild(link);
+      });
+    }
+
+    function sortTable(field) {
+      renderTable(field);
+    }
   </script>
 </body>
 </html>
